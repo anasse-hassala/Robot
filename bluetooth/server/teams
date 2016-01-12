@@ -1,0 +1,19 @@
+# Format is [TYPE] [ADDR] [NAME]
+# where [TYPE] : 1 for NXT, 2 for EV3
+#       [ADDR] : aa:bb:cc:dd:ee:ff is the bluetooth address
+#       [NAME] : is the name of the team
+
+2 00:17:E9:F5:B9:DE wall-ev3
+2 00:17:E9:F5:AF:56 Madara
+2 00:16:E9:F5:B8:69 Raline
+1 00:16:53:1B:F0:6D LEGOBOT
+1 00:00:00:00:00:00 team4
+2 00:17:E9:F5:D0:97 Bumblebee
+2 00:17:E9:F5:AC:7D SexyBot
+2 00:17:E9:F5:C2:B1 Wall-E
+1 00:00:00:00:00:00 team8
+1 00:16:53:15:FC:44 Lockdown
+2 00:17:E9:89:BB:AC Bender
+1 00:16:53:0C:82:47 Ludo3000
+1 00:00:00:00:00:00 team12
+1 00:00:00:00:00:00 team13
