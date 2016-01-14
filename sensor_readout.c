@@ -48,7 +48,7 @@ void *control(void *vargp){
 	ev3_open_sensor(compassS); 
 	ev3_open_sensor(distanceS);
     	ev3_mode_sensor_by_name(colorS, "COL-COLOR");
-	ev3_mode_sensor(distanceS,0);
+		ev3_mode_sensor(distanceS,0);
     struct threadParams *params;
 	params = (struct threadParams*)vargp;
     mqWriter = params->mq;
@@ -61,20 +61,21 @@ void *control(void *vargp){
 	msg.initAngle = gyro(gyroS);
 	clock_t begin, end;
 	double time_spent;
+
     while(1){	            
         distanceRO = distance(distanceS);
         colorRO = color(colorS);
         msg.gyroAngle = gyro(gyroS);    
-    //pushRO = push(pushS);
+    	//pushRO = push(pushS);
         //compassRO = compass(compassS);
-	//printf("COL: %i, DIST: %i\t", colorRO, distanceRO);    
-        
-	msg.instruction = MSG_KEEP_SEARCHING;
+		//printf("COL: %i, DIST: %i\t", colorRO, distanceRO);    
+		msg.instruction = MSG_KEEP_SEARCHING;
     	//printf("DISANCE: %d, PREV: %d ||| ", distanceRO, prevDistance);
-	if(distanceRO < 150){ //350
+	
+	if(distanceRO < 350){ //350
 	    	ballCounter++;
-	//	printf("BALL DETECTED\n");
-		if (ballCounter > 20){
+		//	printf("BALL DETECTED\n");
+		if (ballCounter > 30){
 			begin = clock();
 			msg.instruction = MSG_BALL_DET;
 			ballCounter = 0;	
@@ -85,17 +86,16 @@ void *control(void *vargp){
 
 	if(distanceRO > 70 && distanceRO < 85)
 		stuckCounter++;
-
 	
         if(distanceRO < BALL_IN_RANGE_DISTANCE && colorRO == COLOR_RED){
-            stuckCounter = 0;
+        stuckCounter = 0;
 	    ballCounter = 0;
 	    msg.instruction = MSG_BALL_IN_RANGE;
-	    end = clock(); 
-	    time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-	    printf("%d\n",time_spent);
-	    msg.currentAngle = compass(compassS);
-	//ballCaught = 1;
+	    //end = clock(); 
+	    //time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+	    //printf("TIME RUN: %d\n",time_spent);
+	    msg.currentAngle =gyro(gyroS);
+		//ballCaught = 1;
        /* }else if(pushRO == 1){
 	    stuckCounter = 0;
             msg = MSG_BUTTON_PUSHED;*/
@@ -105,7 +105,7 @@ void *control(void *vargp){
 		ballCounter = 0;
 		stuckCounter=0;
 	
-	}
+		}
 	pthread_mutex_lock(instructionLock);
         status = mq_send(mqWriter, (char*)&msg,sizeof (struct ev3_message) , 1);
         if (status == -1)

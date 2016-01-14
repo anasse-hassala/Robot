@@ -3,8 +3,8 @@ ifndef RANLIB
 	RANLIB = ranlib
 endif
 
-drive: motor_movement.o sensor_readout.o drive.o client.o
-	cc -o bin/client drive.o motor_movement.o sensor_readout.o client.o lib/ev3c.a -pthread -lrt $(CFLAGS)
+drive: motor_movement.o sensor_readout.o drive.o
+	cc -o bin/drive drive.o motor_movement.o sensor_readout.o lib/ev3c.a -pthread -lrt -lm $(CFLAGS)
 
 
 all: lib/ev3c.a bin/test_sensor bin/test_motor bin/test_lcd bin/test_button bin/test_led bin/test_battery
