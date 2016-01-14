@@ -6,6 +6,7 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 #include <mqueue.h>
+#include <bumblebeeTypesAndDefs.h>
 
 #define SERV_ADDR   "64:5A:04:2C:8D:9C"     // Whatever the address of the server is
 
@@ -22,12 +23,12 @@
 #define TEAM_ID     1
 
 
-#define MQ_BLUETOOTH_NAME "/bluetooth" 
+#define MQ_NAME_BLUETOOTH "/bluetooth" 
 
 #define MQ_SIZE 10
 #define PMODE 0666 
 
-void init_queue (mqd_t *mq_desc, int open_flags) {
+void init_queue_bluetooth (mqd_t *mq_desc, int open_flags) {
   struct mq_attr attr;
   
   // fill attributes of the mq
@@ -45,16 +46,16 @@ void init_queue (mqd_t *mq_desc, int open_flags) {
 }
 
 /* to get a bluetooth message from message queue */
-struct bluetooth_message get_bluetooth_msg (mqd_t mq_desc) {
+struct bluetooth_message get_msg_bluetooth (mqd_t mq_desc) {
   ssize_t num_bytes_received = 0;
-  struct ev3_message data = {0, 0};
+  struct bluetooth_message bt_msg;
 
   //receive an int from mq
-  num_bytes_received = mq_receive (mq_desc, (char *) &data, sizeof (struct bluetooth_message)
+  num_bytes_received = mq_receive (mq_desc, (char *) &bt_msg, sizeof (struct bluetooth_message)
 , NULL);
   if (num_bytes_received == -1)
     perror ("mq_receive failure");
-  return (data);
+  return (bt_msg);
 }
 
 
@@ -97,19 +98,18 @@ int read_from_server (int sock, char *buffer, size_t maxSize) {
 
 void leader () {
     mq_unlink(MQ_BLUETOOTH_NAME);
-    mqd_t mqBluetoothWriter, mqBluetoothReader;
-    init_queue(&mqBluetoothWriter, O_CREAT | O_WRONLY);
-    init_queue(&mqBluetoothReader, O_RDONLY);
+    mqd_t mqReaderBluetooth;
+    init_queue_bluetooth(&mqReaderBluetooth, O_CREAT | O_RDONLY);
     int pid = fork();
     if(pid == 0){
-        drive(&mqBluetoothWriter);
+        drive();
     }   
      
     char string[58];
     printf ("I'm the leader...\n");
     bluetooth_message msg;
     while(1){
-        msg = get_bluetooth_msg(mqBluetoothReader)
+        msg = get_msg_bluetooth(mqReaderBluetooth)
         
         // Send ACTION message
         *((uint16_t *) string) = msgId++;
@@ -133,27 +133,28 @@ void follower () {
     char string[58];
     printf ("I'm a follower...\n");
 
-    // Get message
-    read_from_server (s, string, 58);
-    char type = string[4];
+    while(1){
+        // Get message
+        read_from_server (s, string, 58);
+        char type = string[4];
+        switch (type) {
+            case MSG_ACTION:
+                // Send ACK message
+                string[3] = string[2];      // reply to sender
+                string[2] = TEAM_ID;
+                string[4] = MSG_ACK;
 
-    switch (type) {
-        case MSG_ACTION:
-            // Send ACK message
-            string[3] = string[2];      // reply to sender
-            string[2] = TEAM_ID;
-            string[4] = MSG_ACK;
+                string[5] = string[0];      // ID of the message to acknowledge
+                string[6] = string[1];
 
-            string[5] = string[0];      // ID of the message to acknowledge
-            string[6] = string[1];
+                *((uint16_t *) string) = msgId++;
 
-            *((uint16_t *) string) = msgId++;
-
-            string[7] = 0x00;           // status OK
+                string[7] = 0x00;           // status OK
             
-            write(s, string, 8);
+                write(s, string, 8);
+            
 
-            break;
+                break;
         case MSG_STOP:
             return;
         case MSG_LEAD:
