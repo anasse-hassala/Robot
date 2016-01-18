@@ -6,44 +6,16 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/rfcomm.h>
 #include <mqueue.h>
-#include <bumblebeeTypesAndDefs.h>
+#include "bumblebeeTypesAndDefs.h"
+#include "drive.h"
 
-#define SERV_ADDR   "64:5A:04:2C:8D:9C"     // Whatever the address of the server is
-
+//#define SERV_ADDR   "AC:7B:A1:60:16:CE"     // Whatever the address of the server is
+//#define SERV_ADDR   "00:1A:7D:DA:71:06"
+//#define SERV_ADDR "78:31:C1:CF:B1:49"
+#define SERV_ADDR "DC:53:60:AD:61:90"
 #define BY_SSH
 
-#define MSG_ACTION  0
-#define MSG_ACK     1
-#define MSG_LEAD    2
-#define MSG_START   3
-#define MSG_STOP    4
-#define MSG_WAIT    5
-#define MSG_CUSTOM  6
 
-#define TEAM_ID     1
-
-
-#define MQ_NAME_BLUETOOTH "/bluetooth" 
-
-#define MQ_SIZE 10
-#define PMODE 0666 
-
-void init_queue_bluetooth (mqd_t *mq_desc, int open_flags) {
-  struct mq_attr attr;
-  
-  // fill attributes of the mq
-  attr.mq_maxmsg = MQ_SIZE;
-  attr.mq_msgsize =  sizeof (struct bluetooth_message);
-  attr.mq_flags = 0;
-
-  // open the mq
-  //*mq_desc = mq_open (MQ_NAME, open_flags);
-  *mq_desc = mq_open (MQ_BLUETOOTH_NAME, open_flags, PMODE, &attr);
-  if (*mq_desc == (mqd_t)-1) {
-    perror("Mq opening failed");
-    exit(-1);
-  }
-}
 
 /* to get a bluetooth message from message queue */
 struct bluetooth_message get_msg_bluetooth (mqd_t mq_desc) {
@@ -96,50 +68,62 @@ int read_from_server (int sock, char *buffer, size_t maxSize) {
     return bytes_read;
 }
 
-void leader () {
-    mq_unlink(MQ_BLUETOOTH_NAME);
-    mqd_t mqReaderBluetooth;
-    init_queue_bluetooth(&mqReaderBluetooth, O_CREAT | O_RDONLY);
-    int pid = fork();
-    if(pid == 0){
-        drive();
-    }   
-     
-    char string[58];
-    printf ("I'm the leader...\n");
-    bluetooth_message msg;
-    while(1){
-        msg = get_msg_bluetooth(mqReaderBluetooth)
-        
-        // Send ACTION message
-        *((uint16_t *) string) = msgId++;
-        string[2] = TEAM_ID;
-        string[3] = msg.next;
-        string[4] = msg.action;
-
-        string[5] = msg.angle1;          // angle 90 degree
-        string[6] = msg.angle2;
-
-        string[7] = msg.distance;          // dist 10cm
-
-        string[8] = msg.speed1;          // speed 20mm/s
-        string[9] = msg.speed2;
-
-        write(s, string, 10);
-    }
-}
-
 void follower () {
+    int status = -1;
     char string[58];
     printf ("I'm a follower...\n");
+    mqd_t mqWriterFollower;
+    init_queue_follower(&mqWriterFollower, O_CREAT | O_WRONLY);
+    struct follower_action action;
 
     while(1){
         // Get message
         read_from_server (s, string, 58);
         char type = string[4];
+        int delay, speed1, speed2;
+        msgId =  *((uint16_t *) string);
+
         switch (type) {
-            case MSG_ACTION:
-                // Send ACK message
+             case MSG_ACTION:
+                    action.angle =  *((uint16_t *) (string+5));
+                    action.distance =  string[7];
+                    
+                   // speed1 = string[8];
+                    //speed2 = string[9];
+                    //action.speed = speed1 + 255*speed2;
+
+                    action.speed =  *((uint16_t *) (string+8));
+                    if(action.angle > 0 && action.distance > 0 && action.speed > 0){
+                        action.movement = TURN_MOVE;
+                    }else{
+                    if(action.angle > 0 && action.angle <= 360){
+                        action.movement = TURN;    
+                    } 
+                    else if (action.distance != 0 && action.speed != 0){
+                        action.movement = MOVE;
+                    }
+                    }
+                break;
+        case MSG_STOP:
+            return;
+        case MSG_LEAD:
+            action.movement = MODE_LEAD;
+            mq_send(mqWriterFollower, (char*)&action,sizeof (struct follower_action) , 1);
+            return;
+        case MSG_CANCEL:
+            action.movement = CANCEL;
+            break;
+        case MSG_WAIT:
+            delay = string[5];
+            sleep(delay);
+            break;
+        default:
+            printf ("Ignoring message %d\n", type);
+        }  
+        status = mq_send(mqWriterFollower, (char*)&action,sizeof (struct follower_action) , 1);
+        if (status == -1)
+            perror("mq_send failure");
+        // Send ACK message
                 string[3] = string[2];      // reply to sender
                 string[2] = TEAM_ID;
                 string[4] = MSG_ACK;
@@ -147,22 +131,62 @@ void follower () {
                 string[5] = string[0];      // ID of the message to acknowledge
                 string[6] = string[1];
 
-                *((uint16_t *) string) = msgId++;
+                *((uint16_t *) string) = ++msgId;
 
                 string[7] = 0x00;           // status OK
             
                 write(s, string, 8);
-            
-
-                break;
-        case MSG_STOP:
-            return;
-        case MSG_LEAD:
-            leader ();
-            break;
-        default:
-            printf ("Ignoring message %d\n", type);
+  
     }
+}
+
+
+void leader (int mode, int previous, int next) {
+    mq_unlink(MQ_BLUETOOTH);
+    mqd_t mqReaderBluetooth;
+    init_queue_bluetooth(&mqReaderBluetooth, O_CREAT | O_RDONLY);
+    
+    int pid = fork();
+    
+    if(pid != 0){
+        printf("STARTING DRIVE\n");
+        drive(mode);
+        return;
+    }
+    if(mode == MODE_FOLLOW){
+        printf("FOLLOWING\n");
+        follower();
+    } 
+
+    char string[58];
+    printf ("I'm the leader...\n");
+    struct bluetooth_message msg;
+    while(1){
+        printf("TRYING TO READ FROM BTQ\n");
+        msg = get_msg_bluetooth(mqReaderBluetooth);        
+        printf("SENDING BT MESSAGE: \n");
+        // Send ACTION message
+        *((uint16_t *) string) = msgId++;
+        printf("Msg ID %i\n", msgId);
+        string[2] = TEAM_ID;
+        printf("Team ID: %c\n", TEAM_ID);
+        string[3] = next;
+        printf("Next ID: %c\n", next);
+        string[4] = msg.action;
+        printf("Action: %i\n", msg.action);
+
+        *((uint16_t *) (string+5)) = msg.angle;          // angle 90 degree
+        printf("Angle: %i\n", msg.angle);
+
+        string[7] = msg.distance;          // dist 10cm
+        printf("distnace: %i\n",msg.distance);
+
+        *((uint16_t *) (string+8)) = msg.speed*10;
+        printf("Speed: %i\n", msg.speed);
+
+        write(s, string, 10);
+    }
+    
 }
 
 
@@ -176,7 +200,7 @@ int main(int argc, char **argv) {
     // set the connection parameters (who to connect to)
     addr.rc_family = AF_BLUETOOTH;
     addr.rc_channel = (uint8_t) 1;
-    str2ba (SERV_ADDR, &addr.rc_bdaddr);
+    str2ba(SERV_ADDR, &addr.rc_bdaddr);
 
     // connect to server
     status = connect(s, (struct sockaddr *)&addr, sizeof(addr));
@@ -191,15 +215,14 @@ int main(int argc, char **argv) {
             printf ("Received start message!\n");
             rank = (unsigned char) string[5];
             length = (unsigned char) string[6];
-            previous = (unsigned char) string[7];
+             previous = (unsigned char) string[7];
             next = (unsigned char) string[8];
         }
-
         if (rank == 0)
-            leader ();
+            leader (MODE_LEAD,previous,next);
         else
-            follower ();
-
+            leader (MODE_FOLLOW,previous,next);
+        printf("CLOSING");
         close (s);
 
         sleep (5);

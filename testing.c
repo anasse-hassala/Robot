@@ -195,27 +195,86 @@ int main(int argc,char** argv)
 	int t,DD;
 //	printf("ABSOLUTE: %i, bool: %i \n", abs(DD - distance(distanceS,time)),	);	
 
-	move(leftM, rightM, 15000, 100);	
 	int pushV,colorV,compassV,distanceV;
 	//Waiting for the second motor to get to holding position
-	while (
+	
+	move(leftM, rightM, 830, 250);	
+    while (
 		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
 		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
-		(ev3_motor_state( middleM ) & MOTOR_RUNNING)) && 
-		color(colorS, time) < BALL_IN_RANGE_COLOR
-		
-	){
-        //int j;
-                        //for (j = 0; j < pushS->data_count;j++)
-//        colorV    = color(colorS,time);
-  //              printf("COL: %i \n",colorV);
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
 
-    //    compassV  = compass(compassS,time);
-      //          printf("COMP: %i \n",compassV);
-        distanceV = distance(distanceS,time);
-                printf("DIST: %i #",distanceV);
-        
-        };
+	move(leftM, rightM, 5, -1);	
+sleep(5);
+    	move(leftM, rightM, 830, -250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+	move(leftM, rightM, 5, 1);	
+sleep(5);
+
+
+        	move(leftM, rightM, 1660, 250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+	move(leftM, rightM, 5, -1);	
+sleep(5);
+	move(leftM, rightM, 1660, -250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+	move(leftM, rightM, 5, 1);	
+sleep(5);
+	move(leftM, rightM, 2490, 250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+
+sleep(5);
+
+	move(leftM, rightM, 2490, -250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+sleep(5);
+	move(leftM, rightM, 3320, 250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+sleep(5);
+	move(leftM, rightM, 3320, -250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+sleep(5);
+	move(leftM, rightM, 4150, 250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
+sleep(5);
+	move(leftM, rightM, 4150, -250);	
+    while (
+		((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( rightM ) & MOTOR_RUNNING) ||
+		(ev3_motor_state( middleM ) & MOTOR_RUNNING)));
+
 
 	
 	ev3_delete_motors(motors);

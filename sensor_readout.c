@@ -49,6 +49,8 @@ void *control(void *vargp){
 	ev3_open_sensor(distanceS);
     	ev3_mode_sensor_by_name(colorS, "COL-COLOR");
 		ev3_mode_sensor(distanceS,0);
+
+
     struct threadParams *params;
 	params = (struct threadParams*)vargp;
     mqWriter = params->mq;
@@ -66,16 +68,18 @@ void *control(void *vargp){
         distanceRO = distance(distanceS);
         colorRO = color(colorS);
         msg.gyroAngle = gyro(gyroS);    
-    	//pushRO = push(pushS);
+    	msg.dist = distanceRO;
+        //printf("dist:%d",distanceRO);
+        //pushRO = push(pushS);
         //compassRO = compass(compassS);
 		//printf("COL: %i, DIST: %i\t", colorRO, distanceRO);    
 		msg.instruction = MSG_KEEP_SEARCHING;
     	//printf("DISANCE: %d, PREV: %d ||| ", distanceRO, prevDistance);
 	
-	if(distanceRO < 350){ //350
+	if(distanceRO < 400 && distanceRO >= 90){ //350
 	    	ballCounter++;
 		//	printf("BALL DETECTED\n");
-		if (ballCounter > 30){
+		if (ballCounter > 50){
 			begin = clock();
 			msg.instruction = MSG_BALL_DET;
 			ballCounter = 0;	
@@ -84,16 +88,13 @@ void *control(void *vargp){
 		prevDistance = distanceRO;
 	}
 
-	if(distanceRO > 70 && distanceRO < 85)
+	if(distanceRO > 80 && distanceRO < 89)
 		stuckCounter++;
 	
-        if(distanceRO < BALL_IN_RANGE_DISTANCE && colorRO == COLOR_RED){
+        if( (colorRO == COLOR_RED || colorRO == COLOR_BLUE)){
         stuckCounter = 0;
 	    ballCounter = 0;
 	    msg.instruction = MSG_BALL_IN_RANGE;
-	    //end = clock(); 
-	    //time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-	    //printf("TIME RUN: %d\n",time_spent);
 	    msg.currentAngle =gyro(gyroS);
 		//ballCaught = 1;
        /* }else if(pushRO == 1){
@@ -106,7 +107,7 @@ void *control(void *vargp){
 		stuckCounter=0;
 	
 		}
-	pthread_mutex_lock(instructionLock);
+	//pthread_mutex_lock(instructionLock);
         status = mq_send(mqWriter, (char*)&msg,sizeof (struct ev3_message) , 1);
         if (status == -1)
             perror("mq_send failure");   
