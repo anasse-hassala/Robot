@@ -153,7 +153,7 @@ void leader (int mode, int previous, int next) {
         drive(mode);
         return;
     }
-    if(mode == MODE_FOLLOW){
+    if(mode == MODE_FOLLOW){ 
         printf("FOLLOWING\n");
         follower();
     } 
@@ -218,9 +218,9 @@ int main(int argc, char **argv) {
              previous = (unsigned char) string[7];
             next = (unsigned char) string[8];
         }
-        if (rank == 0)
+        if (rank == 0) // start as leader
             leader (MODE_LEAD,previous,next);
-        else
+        else // start as follower
             leader (MODE_FOLLOW,previous,next);
         printf("CLOSING");
         close (s);

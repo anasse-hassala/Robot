@@ -11,6 +11,7 @@
 #define SEARCH_MOVE 3
 #define SEARCH_START 4
 
+// global variables for position
 int x = 0;
 int y = 0;
 
@@ -24,82 +25,82 @@ void construct_bluetooth_msg(struct bluetooth_message *msg, char next, char acti
 
 //Sensor data transmission
 void init_queue (mqd_t *mq_desc, int open_flags) {
-  struct mq_attr attr;
+    struct mq_attr attr;
   
-  // fill attributes of the mq
-  attr.mq_maxmsg = MQ_SIZE_INSTRUCTIONS;
-  attr.mq_msgsize =  sizeof (struct ev3_message);
-  attr.mq_flags = 0;
+    // fill attributes of the mq
+    attr.mq_maxmsg = MQ_SIZE_INSTRUCTIONS;
+    attr.mq_msgsize =  sizeof (struct ev3_message);
+    attr.mq_flags = 0;
 
-  // open the mq
-  //*mq_desc = mq_open (MQ_INSTRUCTIONS, open_flags);
-  *mq_desc = mq_open (MQ_INSTRUCTIONS, open_flags, PMODE, &attr);
-  if (*mq_desc == (mqd_t)-1) {
-    perror("Mq opening failed");
-    exit(-1);
-  }
+    // open the mq
+    //*mq_desc = mq_open (MQ_INSTRUCTIONS, open_flags);
+    *mq_desc = mq_open (MQ_INSTRUCTIONS, open_flags, PMODE, &attr);
+    if (*mq_desc == (mqd_t)-1) {
+        perror("Mq opening failed");
+        exit(-1);
+    }
 }
 
 //Queue for values from bluetooth message
 void init_queue_bluetooth (mqd_t *mq_desc, int open_flags) {
-  struct mq_attr attr;
+    struct mq_attr attr;
   
-  // fill attributes of the mq
-  attr.mq_maxmsg = MQ_SIZE_BLUETOOTH;
-  attr.mq_msgsize =  sizeof (struct bluetooth_message);
-  attr.mq_flags = 0;
+    // fill attributes of the mq
+    attr.mq_maxmsg = MQ_SIZE_BLUETOOTH;
+    attr.mq_msgsize =  sizeof (struct bluetooth_message);
+    attr.mq_flags = 0;
 
-  // open the mq
-  //*mq_desc = mq_open (MQ_NAME, open_flags);
-  *mq_desc = mq_open (MQ_BLUETOOTH, open_flags, PMODE, &attr);
-  if (*mq_desc == (mqd_t)-1) {
-    perror("Mq opening failed");
-    exit(-1);
-  }
+    // open the mq
+    //*mq_desc = mq_open (MQ_NAME, open_flags);
+    *mq_desc = mq_open (MQ_BLUETOOTH, open_flags, PMODE, &attr);
+    if (*mq_desc == (mqd_t)-1) {
+        perror("Mq opening failed");
+        exit(-1);
+    }
 }
 
 // Queue for speed, angle and distance
 void init_queue_follower (mqd_t *mq_desc, int open_flags) {
-  struct mq_attr attr;
+    struct mq_attr attr;
   
-  // fill attributes of the mq
-  attr.mq_maxmsg = MQ_SIZE_FOLLOWER;
-  attr.mq_msgsize =  sizeof (struct follower_action);
-  attr.mq_flags = 0;
+    // fill attributes of the mq
+    attr.mq_maxmsg = MQ_SIZE_FOLLOWER;
+    attr.mq_msgsize =  sizeof (struct follower_action);
+    attr.mq_flags = 0;
 
-  // open the mq
-  //*mq_desc = mq_open (MQ_NAME, open_flags);
-  *mq_desc = mq_open (MQ_FOLLOWER, open_flags, PMODE, &attr);
-  if (*mq_desc == (mqd_t)-1) {
-    perror("Mq opening failed");
-    exit(-1);
-  }
+    // open the mq
+    //*mq_desc = mq_open (MQ_NAME, open_flags);
+    *mq_desc = mq_open (MQ_FOLLOWER, open_flags, PMODE, &attr);
+    if (*mq_desc == (mqd_t)-1) {
+        perror("Mq opening failed");
+        exit(-1);
+    }
 }
 
 
 /* to get an integer from message queue */
 struct ev3_message get_instruction_msg (mqd_t mq_desc) {
-  ssize_t num_bytes_received = 0;
-  struct ev3_message data = {0, 0};
+    ssize_t num_bytes_received = 0;
+    struct ev3_message data = {0, 0};
 
-  //receive an int from mq
-  num_bytes_received = mq_receive (mq_desc, (char *) &data, sizeof (struct ev3_message)
+    //receive an int from mq
+    num_bytes_received = mq_receive (mq_desc, (char *) &data, sizeof (struct ev3_message)
 , NULL);
-  if (num_bytes_received == -1)
-    perror ("mq_receive failure");
-  return (data);
+    if (num_bytes_received == -1)
+        perror ("mq_receive failure");
+    return (data);
 }
 
 struct follower_action get_msg_follower(mqd_t mq_desc) {
-  ssize_t num_bytes_received = 0;
-  struct follower_action bt_msg;
+    ssize_t num_bytes_received = 0;
+    struct follower_action bt_msg;
 
-  //receive an int from mq
-  num_bytes_received = mq_receive (mq_desc, (char *) &bt_msg, sizeof (struct follower_action)
+    //receive an int from mq
+    num_bytes_received = mq_receive (mq_desc, (char *) &bt_msg, sizeof (struct follower_action)
 , NULL);
-  if (num_bytes_received == -1)
-    perror ("mq_receive failure");
-  return (bt_msg);
+    if (num_bytes_received == -1)
+        perror ("mq_receive failure");
+    return (bt_msg);
 }
 
 void perform_action(ev3_motor_ptr left_M, ev3_motor_ptr right_M, struct follower_action *action){
@@ -143,11 +144,11 @@ void follow(ev3_motor_ptr leftM, ev3_motor_ptr rightM){
                 x += (action.distance*10000/action.speed)*sin(angle*M_PI/180)/(action.speed*208);
                  break;
             case TURN_MOVE:
-                 if (action.angle > 180)
+                if (action.angle > 180)
                     turn(leftM,rightM,(int)FULLTURN_TIME,(int)action.angle - 360);
                 else
-                     turn(leftM,rightM,(int)FULLTURN_TIME,(int)action.angle);
-                 while((ev3_motor_state( leftM ) & MOTOR_RUNNING) || (ev3_motor_state( rightM ) & MOTOR_RUNNING) ); 
+                    turn(leftM,rightM,(int)FULLTURN_TIME,(int)action.angle);
+                while((ev3_motor_state( leftM ) & MOTOR_RUNNING) || (ev3_motor_state( rightM ) & MOTOR_RUNNING) ); 
                 move(leftM, rightM,  (action.distance*1000/action.speed), action.speed*21);
                 break;
             case CANCEL:
@@ -201,28 +202,24 @@ void drive(int mode){
     // start the control/sensor module 
     pthread_t controlThread;
     pthread_create(&controlThread, NULL, control, &controlParams); 
-    init_queue(&mqReaderInstr, O_RDONLY); // set up reader 
-       // initialize reader from the bluetooth mq
+    // initialize reader from construction mq
+    init_queue(&mqReaderInstr, O_RDONLY); 
+    // initialize reader from the bluetooth mq
     init_queue_bluetooth(&mqWriterBluetooth, O_WRONLY);
     
-	
-	
+		
     struct ev3_message instMsg;
     int instruction;
     
     struct bluetooth_message bluetoothMsg;
 
-  
-     //Coordinates
-    //int x = 0;
-    //int y = 0;
     struct timespec t1, t2;
     int detectDistance;
     int direction = 0;
     int count = 0;
     int WISH_ANGLE;
     int searchStage = SEARCH_LEFT;
-    int lastNewMsg = -1; //is this useful?
+    int lastNewMsg = -1;
     int retAngle = 0 ;
     int initAngle = 0;
     int gyroAngle = 0;
@@ -240,7 +237,6 @@ void drive(int mode){
     instMsg = get_instruction_msg(mqReaderInstr);
 	instruction = instMsg.instruction;
 	
-   // status = mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
     initAngle_Start = instMsg.initAngle % 360;
     initAngle = instMsg.initAngle % 360;
 
@@ -254,13 +250,12 @@ void drive(int mode){
 
 	    switch(instruction){
 	        case MSG_KEEP_SEARCHING:
-	            if(/*(instMsg.gyroAngle>=WISH_ANGLE+1 && instMsg.gyroAngle <= WISH_ANGLE+3) ||*/ !((ev3_motor_state( leftM ) & MOTOR_RUNNING) || (ev3_motor_state( rightM ) & MOTOR_RUNNING) )){ 
+	            if((instMsg.gyroAngle>=WISH_ANGLE-1 && instMsg.gyroAngle <= WISH_ANGLE+1) || !((ev3_motor_state( leftM ) & MOTOR_RUNNING) || (ev3_motor_state( rightM ) & MOTOR_RUNNING) )){ 
                     dist_cm = 0;
                     //turn and search  
 		            if(lastNewMsg==MSG_BALL_DET){
                         detectedAndNotFound=1;
-                        //initAngle = instMsg.initAngle % 360;
-                        
+                        //initAngle = instMsg.initAngle % 360;     
                         move(leftM,rightM,5000,-(int)MOVE_SPEED);
                         while((ev3_motor_state( leftM ) & MOTOR_RUNNING) || 
                             (ev3_motor_state( rightM ) & MOTOR_RUNNING) );
@@ -276,8 +271,10 @@ void drive(int mode){
                         printf("\nx=%d, y=%d\n",x,y);
                         break;
                     }
-                    switch(searchStage){
-                        case SEARCH_LEFT:
+                    switch(searchStage){ 
+                    // sweep from -90 to 90 degrees and look for 
+                    // the ball. Detection done in sensor_readout   
+                        case SEARCH_LEFT: 
                             initAngle_Start = instMsg.gyroAngle;
                             turn(leftM, rightM, (int)FULLTURN_TIME, -92); 
                             WISH_ANGLE = instMsg.gyroAngle - 90;
@@ -333,16 +330,7 @@ void drive(int mode){
                 //y += 3*elapsedTime*cos(gyroAngle*M_PI/180)/2.5;
                 //x += 3*elapsedTime*sin(gyroAngle*M_PI/180)/2.5;
 
-                //Tobi
                 int angle_search_stop = instMsg.gyroAngle - initAngle_Start; 
-                /*if (wall_count % 2){  // odd value for wall_count
-                    x_abs += x;
-                    y_abs += y;
- 
-                }else{
-                    x_abs += y;
-                    y_abs += x; 
-                }*/
                 printf("retAngle = %d",retAngle);
                 printf("Current Angle = %d \n",gyroAngle); 
                 printf("\nx=%d, y=%d\n",x,y);
@@ -360,7 +348,7 @@ void drive(int mode){
                          (ev3_motor_state( rightM ) & MOTOR_RUNNING)) 
                          );
                
-                
+                // handling returns from different areas of the arena
                 if(instMsg.gyroAngle - instMsg.initAngle >= -45 && instMsg.gyroAngle - instMsg.initAngle < 45)
                     direction = UP;
                 else if(instMsg.gyroAngle - instMsg.initAngle >= 135 && instMsg.gyroAngle - instMsg.initAngle < -135)
@@ -580,121 +568,7 @@ void drive(int mode){
                 
                     construct_bluetooth_msg(&bluetoothMsg, 2, MSG_LEAD, 0, (abs(x)/speed_cm), speed_mm_s);//Speed isnt MOVE.. but 1.2 cm/sec
                     mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
-                           
-
-                /*if(x >= 500){
-                    turn left
-                }else if(x <= -500){
-                    turn 
-                }*/
-                //turn(leftM,rightM,(int)FULLTURN_TIME,-90);
-             /*   
-                while (
-                        ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                         (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                      );
-
-                move(leftM,rightM,x_abs,(int)MOVE_SPEED);
-                while (
-                        ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                         (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                      );
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 0, (y/speed_cm), speed_mm_s);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-                if(x>=0){ 
-                    turn(leftM,rightM,(int)FULLTURN_TIME,90);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 90, 0, 0);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    move(leftM,rightM,x,(int)MOVE_SPEED);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    //dist_cm = x/speed_cm;    //Calculates the distance in cm 
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 0, (y/speed_cm), speed_mm_s);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    turn(leftM,rightM,(int)FULLTURN_TIME,-90);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, -90, 0, 0);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    move(leftM,rightM,16000,250);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    //dist_cm = 2905/speed_cm;    //Calculates the distance in cm 
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 0, (2905/speed_cm), speed_mm_s);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    //release(middleM);
-                    return;
-                }
-                else{
-                    turn(leftM,rightM,(int)FULLTURN_TIME,-90);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, -90, 0, 0);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    move(leftM,rightM,x,(int)MOVE_SPEED);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    //dist_cm = x/speed_cm;    //Calculates the distance in cm 
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 0, (x/speed_cm), speed_mm_s);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    turn(leftM,rightM,(int)FULLTURN_TIME,90);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 90, 0, 0);
-                     mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    move(leftM,rightM,16000,250);
-                    while (
-                            ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                             (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                          );
-                    //dist_cm = 16000/speed_cm;    //Calculates the distance in cm 
-                    construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 0, (16000/speed_cm), speed_mm_s);
-                    mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
- 
-
-                    return;
-                }//end of if/else (x>=0)
-
-                move(leftM,rightM,x,250);
-                while (
-                        ((ev3_motor_state( leftM ) & MOTOR_RUNNING) ||
-                         (ev3_motor_state( rightM ) & MOTOR_RUNNING))
-                      );
-                //dist_cm = x/speed_cm;    //Calculates the distance in cm 
-                construct_bluetooth_msg(&bluetoothMsg, 2, MSG_ACTION, 0, (x/speed_cm), speed_mm_s);
-                mq_send(mqWriterBluetooth, (char*)&bluetoothMsg,sizeof (struct bluetooth_message) , 1);
-*/
+                 // Back in touchdown zone          
                 release(middleM);
                 break;
 
